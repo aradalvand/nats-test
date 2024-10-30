@@ -1,0 +1,1 @@
+{"Created":"2024-10-30T20:55:56.928761358Z","Name":"bar","durable_name":"bar","name":"bar","deliver_policy":"all","ack_policy":"explicit","ack_wait":30000000000,"max_deliver":-1,"replay_policy":"instant","max_waiting":512,"max_ack_pending":1000,"num_replicas":0}
