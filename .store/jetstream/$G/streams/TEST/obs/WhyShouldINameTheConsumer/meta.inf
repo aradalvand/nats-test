@@ -1,0 +1,1 @@
+{"Created":"2024-10-31T08:37:24.776095771Z","Name":"WhyShouldINameTheConsumer","durable_name":"WhyShouldINameTheConsumer","name":"WhyShouldINameTheConsumer","deliver_policy":"all","ack_policy":"explicit","ack_wait":30000000000,"max_deliver":-1,"replay_policy":"instant","max_waiting":512,"max_ack_pending":1000,"num_replicas":0}
