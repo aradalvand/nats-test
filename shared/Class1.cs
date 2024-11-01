@@ -14,5 +14,12 @@ public record GenerateOtpRequest(
 }
 
 public record GenerateOtpReply(
-    bool Result
+    int Result
 ) : IResponse;
+
+public interface IRequestHandler<TRequest, TResponse>
+    where TRequest : IRequest<TResponse>
+    where TResponse : IResponse
+{
+    public Task<TResponse> Handle(TRequest input, CancellationToken ct = default);
+}

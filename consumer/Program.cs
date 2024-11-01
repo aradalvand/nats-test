@@ -1,11 +1,8 @@
-﻿using System.Buffers;
-using System.Diagnostics;
-using System.Text.Json;
-using NATS;
-using NATS.Client.Core;
-using NATS.Client.JetStream.Models;
+﻿using System.Diagnostics;
 using NATS.Net;
 using Shared;
+
+IRequestClient req = new RequestClient();
 
 await using var client = new NatsClient();
 while (true)
@@ -15,9 +12,9 @@ while (true)
     Console.WriteLine("Sending request");
     Stopwatch sw = new();
     sw.Start();
-    var response = await client.RequestAsync<int, int>("request.foo", input);
+    var response = await req.Send(new GenerateOtpRequest(input.ToString()));
     sw.Stop();
-    Console.WriteLine($"Response '{response.Data}' received in {sw.Elapsed.TotalMilliseconds:N3} ms");
+    Console.WriteLine($"Response '{response}' received in {sw.Elapsed.TotalMilliseconds:N3} ms");
     Console.WriteLine("----------");
 }
 
