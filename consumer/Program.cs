@@ -8,26 +8,29 @@ using NATS.Net;
 
 await using var client = new NatsClient();
 var jetStream = client.CreateJetStreamContext();
+// jetStream.PublishConcurrentAsync()
+// todo: fuck. if partitions are just streams,
 var stream = await jetStream.CreateStreamAsync(new(
     "TEST",
     ["Shenas.Otps.>"]
 )
 {
+    DuplicateWindow = TimeSpan.Zero,
     MaxMsgsPerSubject = 1,
     Discard = StreamConfigDiscard.New,
     DiscardNewPerSubject = true,
 });
 var consumer = await stream.CreateOrUpdateConsumerAsync(new("WhyShouldINameTheConsumer"));
-Console.WriteLine("Stream and consumer created — now consuming...");
 await foreach (var message in consumer.ConsumeAsync(new Ser()))
 {
     Console.WriteLine($"Message received: {message.Subject} - {message.Data}");
     Stopwatch sw = new();
     sw.Start();
-    await message.AckAsync();
+    // NOTE: With `DoubleAck = false` (which is the default) this is effectively fire-and-forget; double-ack ensures that the line after `await AckAsync` would only execute when we have successfully acknowledged the message and it will never be redelivered. See https://docs.nats.io/using-nats/developer/develop_jetstream/model_deep_dive#exactly-once-semantics
+    await message.AckAsync(new() { DoubleAck = true });
     sw.Stop();
     Console.WriteLine($"Message acknowledged in {sw.Elapsed.TotalMilliseconds:N3} ms");
-    Console.WriteLine("---");
+    Console.WriteLine("-    --");
 }
 
 public class Ser : INatsSerializer<Foo>

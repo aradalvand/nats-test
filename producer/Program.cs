@@ -13,10 +13,16 @@ while (true)
     sw.Start();
     // NOTE: The publishing side of nats is extremely simple — no knowledge of streams — we simply publish a message to a specific subject. See https://youtu.be/EJJ2SG-cKyM?t=260
     var foo = new Foo(123, 321);
+    // todo: do we get pub-ack here?
     await client.PublishAsync($"Shenas.Otps.{partitionKey}", foo, serializer: new Ser());
     sw.Stop();
     Console.WriteLine($"Message sent in {sw.Elapsed.TotalMilliseconds:N3} ms");
     Console.WriteLine("---");
+
+    await foreach (var request in client.SubscribeAsync<int>("foo.*"))
+    {
+        request.ReplyAsync()
+    }
 
     Console.CancelKeyPress += async (e, b) =>
     {
