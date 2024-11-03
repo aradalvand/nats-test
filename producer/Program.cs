@@ -3,28 +3,52 @@ using System.Diagnostics;
 using System.Text.Json;
 using NATS.Client.Core;
 using NATS.Net;
-using Shared;
-
-var handler = new GenerateOtpRequestHandler();
 
 await using var client = new NatsClient();
-Console.WriteLine("Waiting for requests");
-await foreach (var request in client.SubscribeAsync<GenerateOtpRequest>(nameof(GenerateOtpRequest))) // todo: we should get it from 'Subject'
+var jetStream = client.CreateJetStreamContext();
+while (true)
 {
     Stopwatch sw = new();
+    Console.Write("Partition Key: ");
+    var partitionKey = Console.ReadLine()!;
     sw.Start();
-    var response = await handler.Handle(request.Data!);
-    await request.ReplyAsync(response);
+    // NOTE: The publishing side of nats is extremely simple — no knowledge of streams — we simply publish a message to a specific subject. See https://youtu.be/EJJ2SG-cKyM?t=260
+    var foo = new Foo(123, 321);
+    var result = await jetStream.PublishAsync($"Shenas.Otps.{partitionKey}", foo, serializer: new Ser());
     sw.Stop();
-    Console.WriteLine($"Replied '{response}' in {sw.Elapsed.TotalMilliseconds:N3} ms");
-    Console.WriteLine("----------");
+    Console.WriteLine($"Message sent in {sw.Elapsed.TotalMilliseconds:N3} ms: {JsonSerializer.Serialize(result, options: new() { WriteIndented = true })}");
+    Console.WriteLine("---");
+
+    Console.CancelKeyPress += async (e, b) =>
+    {
+        Console.WriteLine("Disposing client and producer.");
+        await client.DisposeAsync();
+        Console.WriteLine("Disposed client and producer.");
+    };
 }
 
-public class GenerateOtpRequestHandler : IRequestHandler<GenerateOtpRequest, GenerateOtpReply>
+public class Ser : INatsSerializer<Foo>
 {
-    public async Task<GenerateOtpReply> Handle(GenerateOtpRequest input, CancellationToken ct = default)
+    public INatsSerializer<Foo> CombineWith(INatsSerializer<Foo> next)
     {
-        Console.WriteLine($"Incoming request '{input}' — replying");
-        return new(new Random().Next(1, 9));
+        throw new NotImplementedException();
+    }
+
+    public Foo? Deserialize(in ReadOnlySequence<byte> buffer)
+    {
+        // todo: inefficient
+        var value = JsonSerializer.Deserialize<Foo>(buffer.ToArray());
+        return value;
+    }
+
+    public void Serialize(IBufferWriter<byte> bufferWriter, Foo value)
+    {
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(value);
+        bufferWriter.Write(bytes);
     }
 }
+
+public record Foo(
+    int X,
+    int Y
+);
