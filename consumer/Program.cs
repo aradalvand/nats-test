@@ -20,7 +20,9 @@ var stream = await jetStream.CreateStreamAsync(new(
     Discard = StreamConfigDiscard.New,
     DiscardNewPerSubject = true,
 });
-var consumer = await stream.CreateOrUpdateConsumerAsync(new("WhyShouldINameTheConsumer"));
+var consumer = await stream.CreateOrUpdateConsumerAsync(new()
+{
+});
 await foreach (var message in consumer.ConsumeAsync(new Ser()))
 {
     Console.WriteLine($"Message received: {message.Subject} - {message.Data}");

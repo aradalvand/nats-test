@@ -12,8 +12,9 @@ while (true)
     Console.Write("Partition Key: ");
     var partitionKey = Console.ReadLine()!;
     sw.Start();
-    // NOTE: The publishing side of nats is extremely simple — no knowledge of streams — we simply publish a message to a specific subject. See https://youtu.be/EJJ2SG-cKyM?t=260
     var foo = new Foo(123, 321);
+    // NOTE: The publishing side of nats is extremely simple — no knowledge of specific or anything, no creating "publishers" (a la Pulsar, Kafka) — we simply publish a message to a specific subject. See https://youtu.be/EJJ2SG-cKyM?t=260
+    // NOTE: The `PublishAsync` method on the JetStream context is preferable to the one on `NatsClient` because the former gets an acknowledgement from the server. See https://nats-io.github.io/nats.net/documentation/jetstream/publish.html
     var result = await jetStream.PublishAsync($"Shenas.Otps.{partitionKey}", foo, serializer: new Ser());
     sw.Stop();
     Console.WriteLine($"Message sent in {sw.Elapsed.TotalMilliseconds:N3} ms: {JsonSerializer.Serialize(result, options: new() { WriteIndented = true })}");

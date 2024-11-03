@@ -1,0 +1,1 @@
+{"Created":"2024-11-03T20:06:59.503707481Z","Name":"sdf","durable_name":"sdf","name":"sdf","deliver_policy":"all","ack_policy":"explicit","ack_wait":30000000000,"max_deliver":-1,"replay_policy":"instant","max_waiting":512,"max_ack_pending":1000,"num_replicas":0}
