@@ -1,1 +1,0 @@
-{"Created":"2024-11-03T20:19:07.494413532Z","Name":"NdhJtxpo","name":"NdhJtxpo","deliver_policy":"all","ack_policy":"explicit","ack_wait":30000000000,"max_deliver":-1,"replay_policy":"instant","max_waiting":512,"max_ack_pending":1000,"num_replicas":0}
