@@ -11,20 +11,23 @@ var jetStream = client.CreateJetStreamContext();
 // jetStream.PublishConcurrentAsync()
 // todo: fuck. if partitions are just streams,
 var stream = await jetStream.CreateStreamAsync(new(
-    "Shenas:WorkQueue2",
-    ["Shenas:WorkQueue2.>"]
+    "Shenas:WorkQueue",
+    ["Shenas:WorkQueue.>"]
 )
 {
     DuplicateWindow = TimeSpan.Zero,
     MaxMsgsPerSubject = 1,
     Discard = StreamConfigDiscard.New,
     DiscardNewPerSubject = true,
-    // Retention = StreamConfigRetention.
+    Retention = StreamConfigRetention.Workqueue,
 });
 var consumer = await stream.CreateOrUpdateConsumerAsync(new("idk")
 {
 });
-await foreach (var message in consumer.ConsumeAsync<int>())
+await foreach (var message in consumer.ConsumeAsync<int>(opts: new()
+{
+    MaxMsgs = 1,
+}))
 {
     Console.WriteLine($"Message received: {message.Subject} - {message.Data}");
     Stopwatch sw = new();
@@ -35,8 +38,8 @@ await foreach (var message in consumer.ConsumeAsync<int>())
     {
         while (!cts.Token.IsCancellationRequested)
         {
-            await Task.Delay(1000);
-            await message.AckProgressAsync();
+            await Task.Delay(1000, cts.Token);
+            await message.AckProgressAsync(cancellationToken: cts.Token);
             Console.WriteLine("Ack progress");
         }
     });

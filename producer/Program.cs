@@ -13,7 +13,7 @@ while (true)
     Console.Write("Message ID: ");
     var messageId = Console.ReadLine()!;
     sw.Start();
-    var result = await jetStream.PublishAsync($"Shenas:WorkQueue2.OtpGeneratedMessageConsumer.{messageId}", 123);
+    var result = await jetStream.PublishAsync($"Shenas:WorkQueue.OtpGeneratedMessageConsumer.{messageId}", 123);
     sw.Stop();
     Console.WriteLine($"Message sent in {sw.Elapsed.TotalMilliseconds:N3} ms");
     Console.WriteLine("---");
