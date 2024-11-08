@@ -11,24 +11,40 @@ var jetStream = client.CreateJetStreamContext();
 // jetStream.PublishConcurrentAsync()
 // todo: fuck. if partitions are just streams,
 var stream = await jetStream.CreateStreamAsync(new(
-    "TEST",
-    ["Shenas.Otps.>"]
+    "Shenas:WorkQueue2",
+    ["Shenas:WorkQueue2.>"]
 )
 {
     DuplicateWindow = TimeSpan.Zero,
     MaxMsgsPerSubject = 1,
     Discard = StreamConfigDiscard.New,
     DiscardNewPerSubject = true,
+    // Retention = StreamConfigRetention.
 });
-var consumer = await stream.CreateOrUpdateConsumerAsync(new()
+var consumer = await stream.CreateOrUpdateConsumerAsync(new("idk")
 {
 });
-await foreach (var message in consumer.ConsumeAsync(new Ser()))
+await foreach (var message in consumer.ConsumeAsync<int>())
 {
     Console.WriteLine($"Message received: {message.Subject} - {message.Data}");
     Stopwatch sw = new();
-    sw.Start();
     // NOTE: With `DoubleAck = false` (which is the default) this is effectively fire-and-forget; double-ack ensures that the line after `await AckAsync` would only execute when we have successfully acknowledged the message and it will never be redelivered. See https://docs.nats.io/using-nats/developer/develop_jetstream/model_deep_dive#exactly-once-semantics
+
+    CancellationTokenSource cts = new();
+    _ = Task.Run(async () =>
+    {
+        while (!cts.Token.IsCancellationRequested)
+        {
+            await Task.Delay(1000);
+            await message.AckProgressAsync();
+            Console.WriteLine("Ack progress");
+        }
+    });
+    Console.Write("Press enter to ack");
+    Console.ReadLine();
+    cts.Cancel();
+
+    sw.Start();
     await message.AckAsync(new() { DoubleAck = true });
     sw.Stop();
     Console.WriteLine($"Message acknowledged in {sw.Elapsed.TotalMilliseconds:N3} ms");
