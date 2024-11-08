@@ -33,19 +33,19 @@ await foreach (var message in consumer.ConsumeAsync<int>(opts: new()
     Stopwatch sw = new();
     // NOTE: With `DoubleAck = false` (which is the default) this is effectively fire-and-forget; double-ack ensures that the line after `await AckAsync` would only execute when we have successfully acknowledged the message and it will never be redelivered. See https://docs.nats.io/using-nats/developer/develop_jetstream/model_deep_dive#exactly-once-semantics
 
-    CancellationTokenSource cts = new();
-    _ = Task.Run(async () =>
-    {
-        while (!cts.Token.IsCancellationRequested)
-        {
-            await Task.Delay(1000, cts.Token);
-            await message.AckProgressAsync(cancellationToken: cts.Token);
-            Console.WriteLine("Ack progress");
-        }
-    });
-    Console.Write("Press enter to ack");
-    Console.ReadLine();
-    cts.Cancel();
+    // CancellationTokenSource cts = new();
+    // _ = Task.Run(async () =>
+    // {
+    //     while (!cts.Token.IsCancellationRequested)
+    //     {
+    //         await Task.Delay(1000, cts.Token);
+    //         await message.AckProgressAsync(cancellationToken: cts.Token);
+    //         Console.WriteLine("Ack progress");
+    //     }
+    // });
+    // Console.Write("Press enter to ack");
+    // Console.ReadLine();
+    // cts.Cancel();
 
     sw.Start();
     await message.AckAsync(new() { DoubleAck = true });
