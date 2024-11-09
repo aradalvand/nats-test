@@ -23,6 +23,8 @@ var stream = await jetStream.CreateStreamAsync(new(
 });
 var consumer = await stream.CreateOrUpdateConsumerAsync(new("idk")
 {
+    // NOTE: We want a `MaxDeliver` of `-1` (denoting infinite, so that the message is redelivered until acknowledgement) which is the default, but this is a crucial configuration. See https://docs.nats.io/nats-concepts/jetstream/consumers#:~:text=Yes-,MaxDeliver,-The%20maximum%20number
+    MaxAckPending = -1, // NOTE: Default is 1,000 — setting this to `-1` lifts the restriction, effectively yielding the control flow completely to the client apps — see https://docs.nats.io/nats-concepts/jetstream/consumers#maxackpending
 });
 await foreach (var message in consumer.ConsumeAsync<int>(opts: new()
 {
@@ -31,7 +33,6 @@ await foreach (var message in consumer.ConsumeAsync<int>(opts: new()
 {
     Console.WriteLine($"Message received: {message.Subject} - {message.Data}");
     Stopwatch sw = new();
-    // NOTE: With `DoubleAck = false` (which is the default) this is effectively fire-and-forget; double-ack ensures that the line after `await AckAsync` would only execute when we have successfully acknowledged the message and it will never be redelivered. See https://docs.nats.io/using-nats/developer/develop_jetstream/model_deep_dive#exactly-once-semantics
 
     // await Task.Delay(5_000);
     // await message.AckProgressAsync();
@@ -52,6 +53,7 @@ await foreach (var message in consumer.ConsumeAsync<int>(opts: new()
     // cts.Cancel();
 
     sw.Start();
+    // NOTE: With `DoubleAck = false` (which is the default) this is effectively fire-and-forget; double-ack ensures that the line after `await AckAsync` would only execute when we have successfully acknowledged the message and it will never be redelivered. See https://docs.nats.io/using-nats/developer/develop_jetstream/model_deep_dive#exactly-once-semantics
     await message.AckAsync(new() { DoubleAck = true });
     sw.Stop();
     Console.WriteLine($"Message acknowledged in {sw.Elapsed.TotalMilliseconds:N3} ms");
