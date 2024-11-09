@@ -27,14 +27,16 @@ var consumer = await stream.CreateOrUpdateConsumerAsync(new("idk")
 await foreach (var message in consumer.ConsumeAsync<int>(opts: new()
 {
     MaxMsgs = 1,
-
 }))
 {
     Console.WriteLine($"Message received: {message.Subject} - {message.Data}");
     Stopwatch sw = new();
     // NOTE: With `DoubleAck = false` (which is the default) this is effectively fire-and-forget; double-ack ensures that the line after `await AckAsync` would only execute when we have successfully acknowledged the message and it will never be redelivered. See https://docs.nats.io/using-nats/developer/develop_jetstream/model_deep_dive#exactly-once-semantics
 
-    await Task.Delay(10_000);
+    await Task.Delay(5_000);
+    await message.AckProgressAsync();
+    Console.WriteLine($"Progress acked");
+    await Task.Delay(5_000);
 
     // CancellationTokenSource cts = new();
     // _ = Task.Run(async () =>
