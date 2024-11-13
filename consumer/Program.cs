@@ -11,8 +11,8 @@ var jetStream = client.CreateJetStreamContext();
 // jetStream.PublishConcurrentAsync()
 // todo: fuck. if partitions are just streams,
 var stream = await jetStream.CreateStreamAsync(new(
-    "Shenas:WorkQueue",
-    ["Shenas:WorkQueue.>"]
+    "Test:WorkQueue",
+    ["Test:WorkQueue.>"]
 )
 {
     DuplicateWindow = TimeSpan.Zero,
@@ -24,7 +24,8 @@ var stream = await jetStream.CreateStreamAsync(new(
 var consumer = await stream.CreateOrUpdateConsumerAsync(new("idk")
 {
     // NOTE: We want a `MaxDeliver` of `-1` (denoting infinite, so that the message is redelivered until acknowledgement) which is the default, but this is a crucial configuration. See https://docs.nats.io/nats-concepts/jetstream/consumers#:~:text=Yes-,MaxDeliver,-The%20maximum%20number
-    MaxAckPending = -1, // NOTE: Default is 1,000 — setting this to `-1` lifts the restriction, effectively yielding the control flow completely to the client apps — see https://docs.nats.io/nats-concepts/jetstream/consumers#maxackpending
+    // MaxAckPending = -1, // NOTE: Default is 1,000 — setting this to `-1` lifts the restriction, effectively yielding the control flow completely to the client apps — see https://docs.nats.io/nats-concepts/jetstream/consumers#maxackpending
+    FilterSubject = $"Test:WorkQueue.>",
 });
 await foreach (var message in consumer.ConsumeAsync<int>(opts: new()
 {
@@ -52,6 +53,7 @@ await foreach (var message in consumer.ConsumeAsync<int>(opts: new()
     // Console.ReadLine();
     // cts.Cancel();
 
+    await Task.Delay(1000);
     sw.Start();
     // NOTE: With `DoubleAck = false` (which is the default) this is effectively fire-and-forget; double-ack ensures that the line after `await AckAsync` would only execute when we have successfully acknowledged the message and it will never be redelivered. See https://docs.nats.io/using-nats/developer/develop_jetstream/model_deep_dive#exactly-once-semantics
     await message.AckAsync(new() { DoubleAck = true });
@@ -59,29 +61,3 @@ await foreach (var message in consumer.ConsumeAsync<int>(opts: new()
     Console.WriteLine($"Message acknowledged in {sw.Elapsed.TotalMilliseconds:N3} ms");
     Console.WriteLine("---");
 }
-
-public class Ser : INatsSerializer<Foo>
-{
-    public INatsSerializer<Foo> CombineWith(INatsSerializer<Foo> next)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Foo? Deserialize(in ReadOnlySequence<byte> buffer)
-    {
-        // todo: inefficient
-        var value = JsonSerializer.Deserialize<Foo>(buffer.ToArray());
-        return value;
-    }
-
-    public void Serialize(IBufferWriter<byte> bufferWriter, Foo value)
-    {
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(value);
-        bufferWriter.Write(bytes);
-    }
-}
-
-public record Foo(
-    int X,
-    int Y
-);
