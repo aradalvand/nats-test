@@ -8,15 +8,16 @@ using NATS.Net;
 
 await using var client = new NatsClient();
 var jetStream = client.CreateJetStreamContext(); var stream = await jetStream.CreateStreamAsync(new(
-        "Test:WorkQueue",
-        ["Test:WorkQueue.>"]
-    )
+    "Shenas:Workqueue",
+    ["Shenas:Workqueue.>"]
+)
 {
     DuplicateWindow = TimeSpan.Zero,
     MaxMsgsPerSubject = 1,
     Discard = StreamConfigDiscard.New,
     DiscardNewPerSubject = true,
     Retention = StreamConfigRetention.Workqueue,
+    AllowDirect = true, // NOTE: Allows us to actually see the stream contents from outside the application
 });
 _ = Watch("1");
 _ = Watch("2");
@@ -26,15 +27,11 @@ Console.ReadLine();
 
 async Task Watch(string id)
 {
-    // todo: fuck. if partitions are just streams,
-
-    var consumer = await stream.CreateOrUpdateConsumerAsync(new("idk")
+    var consumer = await stream.CreateOrUpdateConsumerAsync(new("idk") // todo: we might not really need a durable consumer here at all
     {
-        // NOTE: We want a `MaxDeliver` of `-1` (denoting infinite, so that the message is redelivered until acknowledgement) which is the default, but this is a crucial configuration. See https://docs.nats.io/nats-concepts/jetstream/consumers#:~:text=Yes-,MaxDeliver,-The%20maximum%20number
-        // MaxAckPending = -1, // NOTE: Default is 1,000 — setting this to `-1` lifts the restriction, effectively yielding the control flow completely to the client apps — see https://docs.nats.io/nats-concepts/jetstream/consumers#maxackpending
-        FilterSubject = $"Test:WorkQueue.>",
+        FilterSubject = "Shenas:Workqueue.OtpGeneratedMessageConsumer2.>",
     });
-    await foreach (var message in consumer.ConsumeAsync<int>())
+    await foreach (var message in consumer.ConsumeAsync<string>())
     {
         Console.WriteLine($"({id}) Message received: {message.Subject} - {message.Data}");
         Stopwatch sw = new();
@@ -65,5 +62,4 @@ async Task Watch(string id)
         Console.WriteLine($"({id}) Message acknowledged in {sw.Elapsed.TotalMilliseconds:N3} ms");
         Console.WriteLine("---");
     }
-
 }
